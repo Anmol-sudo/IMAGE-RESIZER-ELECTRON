@@ -41,11 +41,6 @@ async function sendImage(e) {
     
     console.log("imgPath: ", imgPath);
     
-    
-    // if(!img.files[0]) {
-    //     alertError('Please upload an image');
-    //     return;
-    // }
 
     if (width === '' || height === '') {
         alertError('Please fill in a height and width');
@@ -53,7 +48,7 @@ async function sendImage(e) {
     }
 
     filename.innerText = imgName;
-    outputPath.innerText = os.homedir();
+    outputPath.innerText = path.join(os.homedir(), "Image Resizer");
 
     // Send to main using ipcRenderer
     ipcRenderer.send('image:resize', {

@@ -1,7 +1,8 @@
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
-const resizeImg = require("resize-img");
+// const resizeImg = require("resize-img");
+const sharp = require("sharp");
 const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require("electron");
 
 const isDev = process.env.NODE_ENV !== "development";
@@ -94,7 +95,7 @@ const menu = [
 
 // Respond to ipcRenderer resize
 ipcMain.on("image:resize", (e, options) => {
-  options.dest = path.join(os.homedir());
+  options.dest = path.join(os.homedir(), "Image Resizer");
   resizeImage(options);
 });
 
@@ -110,35 +111,45 @@ ipcMain.handle("get-file-path", async () => {
   return null;
 });
 
+
 async function resizeImage({ imgPath, width, height, dest }) {
   try {
-    const newPath = await resizeImg(fs.readFileSync(imgPath), {
-      width: +width,
-      height: +height,
-    });
+    console.log("Dest: ", dest);
+    
+    // Read image buffer
+    const buffer = fs.readFileSync(imgPath);
+
+    const resizedBuffer = await sharp(buffer)
+      .resize(+width, +height, {
+        fit: "cover", 
+        position: "centre",
+      })
+      .toBuffer();
 
     // Create filename
-    const filename = path.basename(imgPath); 
-  
-    // Create dest folder
+    const filename = path.basename(imgPath);
+
+    // Ensure destination folder exists
     if (!fs.existsSync(dest)) {
-      fs.mkdirSync(dest);
+      fs.mkdirSync(dest, { recursive: true });
     }
 
-    // Write file to dest 
-    fs.writeFileSync(path.join(dest, filename), newPath);
-    console.log(path.join(dest, filename));
-    
-    // Send success to render
-    mainWindow.webContents.send('image:done');
+    // Write resized image to destination
+    const outputPath = path.join(dest, filename);
+    fs.writeFileSync(outputPath, resizedBuffer);
 
-    // Open dest folder
+    console.log(outputPath);
+
+    // Notify renderer that the image is done
+    mainWindow.webContents.send("image:done");
+
+    // Open destination folder
     shell.openPath(dest);
-
   } catch (error) {
-    console.log(error);
+    console.error("Error resizing image:", error);
   }
 }
+
 
 app.on("window-all-closed", () => {
   if (!isMac) {
