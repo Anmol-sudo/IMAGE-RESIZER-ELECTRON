@@ -35,6 +35,10 @@ async function sendImage(e) {
     const width = widthInput.value;
     const height = heightInput.value;
     const imgPath = await electronAPI.getFilePath();
+    const imgPathArr = imgPath.split("\\");
+    const imgName = imgPathArr[imgPathArr.length - 1];
+    console.log("imgName: ", imgName);
+    
     console.log("imgPath: ", imgPath);
     
     
@@ -48,13 +52,21 @@ async function sendImage(e) {
         return;
     }
 
+    filename.innerText = imgName;
+    outputPath.innerText = os.homedir();
+
     // Send to main using ipcRenderer
     ipcRenderer.send('image:resize', {
         imgPath, 
         width,
-        height
+        height,
     })
 }
+
+// Catch the image:done event
+ipcRenderer.on('image:done', () => {
+    alertSuccess(`Image resized to ${widthInput.value} x ${heightInput.value}`);
+})
 
 // Check file is image
 function isFileImage(file) {
