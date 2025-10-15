@@ -23,9 +23,9 @@ function createMainWindow() {
   });
 
   // Open devtools if in dev env
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
+  // if (isDev) {
+  //   mainWindow.webContents.openDevTools();
+  // }
 
   mainWindow.loadFile(path.join(__dirname, "./renderer/index.html"));
 }
