@@ -1,5 +1,5 @@
 const path = require("path");
-const { app, BrowserWindow, Menu } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require("electron");
 
 const isDev = process.env.NODE_ENV !== "development";
 const isMac = process.platform === "darwin";
@@ -10,6 +10,11 @@ function createMainWindow() {
     title: "Image Resizer",
     width: isDev ? 1000 : 500,
     height: 600,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: true,
+      preload: path.join(__dirname, "preload.js"),
+    },
   });
 
   // Open devtools if in dev env
@@ -22,13 +27,13 @@ function createMainWindow() {
 
 // Create about window
 function createAboutWindow() {
-    const aboutWindow = new BrowserWindow({
-      title: "About Image Resizer",
-      width: 300,
-      height: 300,
-    });
+  const aboutWindow = new BrowserWindow({
+    title: "About Image Resizer",
+    width: 300,
+    height: 300,
+  });
 
-    aboutWindow.loadFile(path.join(__dirname, "./renderer/about.html"));
+  aboutWindow.loadFile(path.join(__dirname, "./renderer/about.html"));
 }
 
 // App is ready
@@ -78,6 +83,25 @@ const menu = [
       ]
     : []),
 ];
+
+
+
+// Respond to ipcRenderer resize
+ipcMain.on("image:resize", (e, options) => {
+  console.log(options);
+});
+
+ipcMain.handle("get-file-path", async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openFile"],
+    filters: [{ name: "Images", extensions: ["jpg", "png", "jpeg", "gif"] }],
+  });
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0];
+  }
+  return null;
+});
 
 app.on("window-all-closed", () => {
   if (!isMac) {
